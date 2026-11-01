@@ -13,7 +13,7 @@ Start with one FastAPI application. Keep HTTP handling, schema validation, provi
 | Endpoint | Purpose | Stage |
 | --- | --- | --- |
 | `GET /health` | Process liveness; no provider request | M1 |
-| `POST /api/v1/analyses` | Analyze a requirement and return a draft | M1 fake; M2 live |
+| `POST /api/v1/analyses` | Analyze a requirement and return a draft | M1 fake and live; M2 richer test-case generation |
 | `GET /api/v1/analyses/{id}` | Retrieve a persisted analysis | M2 |
 | `POST /api/v1/analyses/{id}/reviews` | Record approval or requested changes | M2 |
 
@@ -27,7 +27,7 @@ Map invalid requests, provider timeout, provider refusal, and invalid model outp
 
 ## Persistence and deployment
 
-PostgreSQL stores requirements, immutable analysis revisions, test-case drafts, and review records. The first deployment binds the API to localhost. Authentication, multi-tenancy, external websites, and public hosting are outside the MVP. Public source code does not imply a publicly accessible service.
+A persistence adapter initially supports analysis and review records. PostgreSQL in M4 stores requirements, immutable analysis revisions, test-case drafts, review records, document chunks, and embedding metadata. The first deployment binds the API to localhost. Authentication, multi-tenancy, external websites, and public hosting are outside the MVP. Public source code does not imply a publicly accessible service.
 
 ## Evaluation
 
@@ -40,3 +40,9 @@ The generator can produce a narrow Playwright artifact for an owned local demo a
 A trusted launcher, outside the generated code, must enforce ephemeral non-root containers, no host filesystem mounts or Docker socket, no credentials, bounded CPU/memory/process count/runtime, and network access restricted to the demo application. Use a read-only root filesystem with explicit temporary storage. Keep the runner off the API/database network. Verify these properties before enabling execution.
 
 Docker is one layer of isolation, not a guarantee that arbitrary code is safe. The Playwright image requires explicit security configuration; its documented default root user disables the Chromium sandbox. See [Playwright Docker guidance](https://playwright.dev/python/docs/docker).
+
+## Retrieval and operations roadmap
+
+M4 adds ingestion and retrieval over synthetic requirements and documentation. Chunks retain stable source identifiers and version metadata. Retrieved passages are treated as data; outputs cite their supporting sources and expose missing evidence. Evaluate retrieval separately from generated-answer quality.
+
+M5 adds labeled development/held-out evaluation sets and evidence-based failure analysis. M6 adds GitHub Actions, a local Kubernetes deployment, health probes, configuration/secrets management, prompt/model/configuration versioning, operational monitoring, and rollback. Runner isolation must be verified again in the Kubernetes environment before generated-code execution there.
