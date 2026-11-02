@@ -44,6 +44,8 @@ Deliver a documented API contract, a FastAPI service, a labeled fake provider fo
 
 See [architecture](docs/architecture.md) and [milestones](docs/milestones.md).
 
+The synthetic [Demo Energy Hub specification](docs/demo-energy-hub.md) defines the small application under test planned for M3. It is a fixture, not a separate product, and is not implemented yet.
+
 ## Full roadmap
 
 | Milestone | Deliverable |

@@ -8,6 +8,7 @@ Read README.md and docs/architecture.md before proposing implementation changes.
 
 ## Collaboration
 
+- Codex leads architecture, scope, and integration. Claude executes assigned tasks, reports findings and risks, and does not independently expand scope or begin a new milestone. These instructions do not replace enforced execution controls.
 - Coordinate work through explicit tasks and small diffs. Do not edit the same files concurrently with another coding assistant.
 - Review the working tree before editing. Preserve other contributors' uncommitted changes.
 - Separate observed behavior, documented requirements, and hypotheses. Database contents alone do not establish intended business rules.
