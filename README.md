@@ -2,13 +2,56 @@
 
 AI-assisted requirements analysis and test design, with explicit human review before test execution.
 
-**Status:** M1 foundation only. The only application endpoint implemented is the `GET /health` liveness check, alongside FastAPI's generated API documentation (`/docs`, `/redoc`, `/openapi.json`). The analysis endpoint, fake provider, live LLM integration, and runner are not implemented yet.
+**Status:** M1 is incomplete. Implemented endpoints: `GET /health` (liveness) and `POST /api/v1/analyses`, which is backed only by a deterministic **fake** provider. There is no live LLM integration and no runner yet. The updated container starts and exposes the analysis API documentation; analysis behavior verification is pending human review of the new tests.
 
 ## Current foundation (first slice of M1)
 
 Implemented: an installable Python 3.12 `src` package, a FastAPI app (`qa_intelligence.main:app`) with `GET /health` (process liveness only; no provider, database, or credentials), a Dockerfile, a Compose file, and one contract test for `/health`.
 
-Not implemented: `POST /api/v1/analyses`, the labeled fake provider, the live LLM analysis endpoint, and the synthetic demo. M1 is not complete until a real-provider demonstration succeeds. M2–M6 are unchanged (see the roadmap below).
+Not implemented: the live LLM analysis endpoint and the synthetic demo. M1 is not complete until a real-provider demonstration succeeds. M2–M6 are unchanged (see the roadmap below).
+
+### Analysis endpoint (fake mode)
+
+`POST /api/v1/analyses` validates the request and returns a draft produced by a **deterministic fake provider** (`provider=fake`). It performs no AI or semantic analysis, makes no external calls, uses no secrets, persists nothing, and generates no test cases (`test_cases` is always empty; test-case generation is M2). Output must not be read as real analysis.
+
+Request (synthetic example):
+
+```json
+{
+  "requirement_id": "REQ-ENERGY-001",
+  "text": "The system accepts energy-reading events with energy_wh between 0 and 25000 inclusive.",
+  "acceptance_criteria": [
+    {"id": "AC-1", "text": "An event with energy_wh below 0 or above 25000 is rejected."}
+  ]
+}
+```
+
+Response (HTTP 200):
+
+```json
+{
+  "requirement_id": "REQ-ENERGY-001",
+  "status": "draft",
+  "questions": [],
+  "risks": ["Deterministic fixture only; no semantic analysis was performed."],
+  "test_cases": [],
+  "metadata": {
+    "provider": "fake",
+    "model": "deterministic-v1",
+    "prompt_version": "fake-v1",
+    "token_usage": null
+  }
+}
+```
+
+Fake behavior: `questions` is empty when criteria are supplied; with an empty `acceptance_criteria` list (allowed) it is `["What acceptance criteria define success for this requirement?"]`. Missing criteria are clarified, not invented.
+
+Limits (independent; both apply):
+
+- Total request body: 262144 bytes, enforced on this POST route before JSON parsing, including chunked bodies without `Content-Length`. Overflow returns HTTP 413 and no provider call is made.
+- Characters per field (after trimming): `requirement_id` 1–100, `text` 1–10000, criterion `id` 1–100, criterion `text` 1–2000; at most 20 criteria with unique ids. Extra fields are rejected. Violations return HTTP 422 and no provider call is made.
+
+Status of this slice: source syntax and package metadata were checked, the Docker image built, and container startup, `/health`, and OpenAPI documentation were inspected on 2026-11-02. Analysis behavior has not yet been exercised. `tests/test_analysis.py` has not been run, imported, or collected; it awaits human review before isolated execution.
 
 ### Setup and start
 

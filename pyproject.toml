@@ -9,6 +9,7 @@ description = "AI-assisted requirements analysis and test design platform"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.110",
+    "pydantic>=2",
     "uvicorn>=0.29",
 ]
 
