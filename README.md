@@ -2,7 +2,39 @@
 
 AI-assisted requirements analysis and test design, with explicit human review before test execution.
 
-**Status:** initial design. The API and runner are not implemented yet.
+**Status:** M1 foundation only. The only application endpoint implemented is the `GET /health` liveness check, alongside FastAPI's generated API documentation (`/docs`, `/redoc`, `/openapi.json`). The analysis endpoint, fake provider, live LLM integration, and runner are not implemented yet.
+
+## Current foundation (first slice of M1)
+
+Implemented: an installable Python 3.12 `src` package, a FastAPI app (`qa_intelligence.main:app`) with `GET /health` (process liveness only; no provider, database, or credentials), a Dockerfile, a Compose file, and one contract test for `/health`.
+
+Not implemented: `POST /api/v1/analyses`, the labeled fake provider, the live LLM analysis endpoint, and the synthetic demo. M1 is not complete until a real-provider demonstration succeeds. M2–M6 are unchanged (see the roadmap below).
+
+### Setup and start
+
+The package targets Python 3.12 and its dependencies are declared in `pyproject.toml` (not locked yet). Docker is the supported execution path for this slice.
+
+Docker Compose (binds to `127.0.0.1` only):
+
+```text
+docker compose up --build
+```
+
+Health URL: <http://127.0.0.1:8000/health> returns `{"status":"ok"}`. Interactive API docs are at <http://127.0.0.1:8000/docs>.
+
+Shut down the container:
+
+```text
+docker compose down
+```
+
+### Verification status
+
+- Verified on 2026-11-01: the image builds and starts; `/health` returns HTTP 200 with exactly `{"status":"ok"}`; `/docs` and `/openapi.json` return HTTP 200.
+- Inspected container settings: UID/GID 10001, read-only root filesystem, dropped capabilities, no-new-privileges, no host bind mounts, and bounded CPU, memory, and process count. The API port is bound to localhost.
+- The reviewed health contract test passed in a separate Docker container with networking disabled and no host mounts: **1 passed**. No tests were executed on the host. Modified or additional generated tests require renewed human review before isolated execution.
+- The test run emitted an upstream Starlette/httpx deprecation warning. Dependency compatibility and locking remain follow-up work; there is no CI pipeline yet.
+- Dependencies are not locked, so the image build is not claimed to be reproducible.
 
 ## MVP
 
