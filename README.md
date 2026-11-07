@@ -2,7 +2,7 @@
 
 AI-assisted requirements analysis and test design, with explicit human review before test execution.
 
-**Status:** M2 test-case drafts are available through an explicit request option. A live Claude demonstration returned ten cases linked to supplied acceptance criteria. All 20 reviewed platform scenarios passed in isolated Docker. Persistence and saved review decisions are the next M2 increment.
+**Status:** M2 supports opt-in test-case drafts and SQLite-backed analysis snapshots and review history. A live Claude demonstration returned ten cases linked to supplied acceptance criteria. All 32 reviewed platform scenarios passed in isolated Docker, and saved data survived API container replacement.
 
 ## Current foundation (first slice of M1)
 
@@ -88,7 +88,15 @@ Each case contains `id`, `title`, `category` (positive, negative or boundary), `
 
 A valid source ID establishes structural traceability. A reviewer must still decide whether the criterion supports the case's steps and expected result. Missing rules remain clarification questions.
 
-A live Claude demonstration using four clarified synthetic energy criteria returned ten draft cases across all three categories with references to all four criteria. For example, the case submitting `energy_wh=-1` expects HTTP 422 and cites AC-2. This single result is demonstration evidence. Saved analyses, review decisions and broader quality evaluation follow in later increments.
+A live Claude demonstration using four clarified synthetic energy criteria returned ten draft cases across all three categories with references to all four criteria. For example, the case submitting `energy_wh=-1` expects HTTP 422 and cites AC-2. This single result is demonstration evidence.
+
+### Saved analyses and reviews
+
+An analysis response includes `analysis_id`, `created_at` and `draft_sha256`. Retrieve its normalized input, immutable draft and review history with `GET /api/v1/analyses/{analysis_id}`.
+
+Submit an `approved` or `changes_requested` decision through `POST /api/v1/analyses/{analysis_id}/reviews`, identifying the draft digest and a unique review ID. Identical retries return the existing decision. SQLite transactions preserve an ordered review history.
+
+Docker Compose stores data in the named `qa-data` volume. See [persistence and reviews](docs/persistence.md) for request examples, status codes and data lifetime.
 
 ### Setup and start
 
@@ -114,7 +122,8 @@ docker compose down
 - Inspected container settings: UID/GID 10001, read-only root filesystem, dropped capabilities, no-new-privileges, no host bind mounts, and bounded CPU, memory, and process count. The API port is bound to localhost.
 - The reviewed health contract test passed in a separate Docker container with networking disabled and no host mounts: **1 passed**. No tests were executed on the host. Modified or additional generated tests require renewed human review before isolated execution.
 - A clean Docker build installed the locked runtime and package-build dependencies with hash checking. The local package installation uses the locked build backend with network access and dependency resolution disabled.
-- All 20 reviewed platform scenarios passed together against the locked environment in a verified network-disabled Docker container. This includes seven M2 structural and traceability scenarios. `pip check` previously reported no broken requirements for these locked dependencies.
+- All 32 reviewed platform scenarios passed together against the locked environment in a verified network-disabled Docker container. This includes structural, traceability, storage, review-history, retry and concurrency scenarios. `pip check` previously reported no broken requirements for these locked dependencies.
+- A separate fake-provider API verification saved an analysis and a synthetic review, removed the container, and retrieved the same snapshot and review from a new container using the same named volume.
 - Lock verification covers Python 3.12 on Linux amd64. CI is planned in M6.
 
 ## MVP

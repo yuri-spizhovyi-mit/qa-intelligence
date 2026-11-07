@@ -19,3 +19,6 @@ test-results/
 local-study/
 .idea/
 .vscode/
+*.sqlite*
+*.db
+*.db-journal

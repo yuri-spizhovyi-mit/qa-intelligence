@@ -1,4 +1,6 @@
 from typing import Annotated, Literal
+from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
@@ -83,3 +85,37 @@ class AnalysisResponse(BaseModel):
     risks: list[str]
     test_cases: list[DraftTestCase]
     metadata: AnalysisMetadata
+
+
+class SavedAnalysisResponse(AnalysisResponse):
+    analysis_id: UUID
+    created_at: datetime
+    draft_sha256: str
+
+
+class ReviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    review_id: UUID
+    draft_sha256: Annotated[str, Field(strict=True, pattern=r"^[0-9a-f]{64}$")]
+    decision: Literal["approved", "changes_requested"]
+    reviewer: Annotated[str, _trimmed(100)]
+    comment: Annotated[str, StringConstraints(strict=True, strip_whitespace=True, max_length=2000)] = ""
+
+    @model_validator(mode="after")
+    def require_change_reason(self) -> "ReviewRequest":
+        if self.decision == "changes_requested" and not self.comment:
+            raise ValueError("A change request requires a comment")
+        return self
+
+
+class ReviewRecord(ReviewRequest):
+    analysis_id: UUID
+    created_at: datetime
+
+
+class AnalysisRecord(BaseModel):
+    request: AnalysisRequest
+    draft: SavedAnalysisResponse
+    review_status: Literal["pending", "approved", "changes_requested"]
+    reviews: list[ReviewRecord]

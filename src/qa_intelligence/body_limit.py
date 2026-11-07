@@ -5,7 +5,7 @@ MAX_BODY_BYTES = 262144
 
 
 class BodyLimitMiddleware:
-    """Pure ASGI cap on the total request body of one POST route, applied before parsing."""
+    """Cap analysis and review POST bodies before JSON parsing."""
 
     def __init__(self, app, path: str = ANALYSES_PATH, max_bytes: int = MAX_BODY_BYTES):
         self.app = app
@@ -16,7 +16,13 @@ class BodyLimitMiddleware:
         if (
             scope["type"] != "http"
             or scope["method"] != "POST"
-            or scope["path"] != self.path
+            or not (
+                scope["path"] == self.path
+                or (
+                    scope["path"].startswith(self.path + "/")
+                    and scope["path"].endswith("/reviews")
+                )
+            )
         ):
             await self.app(scope, receive, send)
             return
