@@ -22,7 +22,11 @@ COPY pyproject.toml ./
 COPY src/ ./src/
 
 RUN --network=none pip install --no-deps --no-build-isolation . \
-    && useradd --system --uid 10001 --no-create-home appuser
+    && useradd --system --uid 10001 --no-create-home appuser \
+    && mkdir -p /var/lib/qa-intelligence \
+    && chown 10001:10001 /var/lib/qa-intelligence
+
+ENV QA_DATA_DIR=/var/lib/qa-intelligence
 
 USER 10001:10001
 

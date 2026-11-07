@@ -1,6 +1,6 @@
 # Architecture
 
-Status: proposed implementation boundaries.
+Status: analysis and local review boundaries implemented; later milestone boundaries remain planned.
 
 ## Core flow
 
@@ -27,7 +27,7 @@ Map invalid requests, provider timeout, provider refusal, and invalid model outp
 
 ## Persistence and deployment
 
-A persistence adapter initially supports analysis and review records. PostgreSQL in M4 stores requirements, immutable analysis revisions, test-case drafts, review records, document chunks, and embedding metadata. The first deployment binds the API to localhost. Authentication, multi-tenancy, external websites, and public hosting are outside the MVP. Public source code does not imply a publicly accessible service.
+A SQLite adapter stores immutable input/draft snapshots and append-only digest-bound review records in M2. Docker Compose persists its database in a named volume. Review IDs provide transactional idempotency and the latest appended review determines review status. See [persistence](persistence.md). PostgreSQL in M4 stores requirements, immutable analysis revisions, test-case drafts, review records, document chunks, and embedding metadata. The first deployment binds the API to localhost. Authentication, multi-tenancy, external websites, and public hosting are outside the MVP. Public source code does not imply a publicly accessible service.
 
 ## Evaluation
 
