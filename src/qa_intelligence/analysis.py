@@ -1,11 +1,24 @@
 from typing import Protocol
 
+from pydantic import BaseModel, ConfigDict
+
 from qa_intelligence.schemas import (
     AnalysisDraft,
     AnalysisMetadata,
     AnalysisRequest,
     AnalysisResponse,
 )
+
+
+class RequirementFindings(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    questions: list[str]
+    risks: list[str]
+
+
+class UnusableAnalysisError(Exception):
+    """The provider did not return a complete, parsed draft."""
 
 
 class AnalysisProvider(Protocol):

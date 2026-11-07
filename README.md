@@ -2,13 +2,13 @@
 
 AI-assisted requirements analysis and test design, with explicit human review before test execution.
 
-**Status:** M1 is incomplete. Implemented endpoints: `GET /health` (liveness) and `POST /api/v1/analyses`, which is backed only by a deterministic **fake** provider. There is no live LLM integration and no runner yet. The updated container starts and exposes the analysis API documentation; analysis behavior verification is pending human review of the new tests.
+**Status:** M1 is incomplete. The analysis endpoint defaults to a deterministic fake provider. Opt-in Claude and OpenAI adapters are implemented and await a successful live demonstration.
 
 ## Current foundation (first slice of M1)
 
 Implemented: an installable Python 3.12 `src` package, a FastAPI app (`qa_intelligence.main:app`) with `GET /health` (process liveness only; no provider, database, or credentials), a Dockerfile, a Compose file, and one contract test for `/health`.
 
-Not implemented: the live LLM analysis endpoint and the synthetic demo. M1 is not complete until a real-provider demonstration succeeds. M2–M6 are unchanged (see the roadmap below).
+M1 is not complete until a real-provider demonstration succeeds. See the roadmap below for the synthetic demo and later milestones.
 
 ### Analysis endpoint (fake mode)
 
@@ -51,7 +51,32 @@ Limits (independent; both apply):
 - Total request body: 262144 bytes, enforced on this POST route before JSON parsing, including chunked bodies without `Content-Length`. Overflow returns HTTP 413 and no provider call is made.
 - Characters per field (after trimming): `requirement_id` 1–100, `text` 1–10000, criterion `id` 1–100, criterion `text` 1–2000; at most 20 criteria with unique ids. Extra fields are rejected. Violations return HTTP 422 and no provider call is made.
 
-Status of this slice: source syntax and package metadata were checked, the Docker image built, and container startup, `/health`, and OpenAPI documentation were inspected on 2026-11-02. Analysis behavior has not yet been exercised. `tests/test_analysis.py` has not been run, imported, or collected; it awaits human review before isolated execution.
+The eight reviewed fake-provider contract tests passed in isolated Docker before the OpenAI adapter was added. The run emitted a Starlette test-client deprecation warning.
+
+### Live analysis
+
+For Claude, create an API key in the Claude Console. API access needs available credits. Enter the key at a masked prompt in PowerShell 7, then start the API from this directory.
+
+```powershell
+$env:ANTHROPIC_API_KEY = Read-Host "Claude API key" -MaskInput
+$env:QA_CLAUDE_MODEL = "claude-sonnet-5-5"
+docker compose -p qi-m1-foundation stop api
+docker compose -p qi-m1-foundation run --build --rm --service-ports -e QA_ANALYSIS_PROVIDER=anthropic -e ANTHROPIC_API_KEY -e QA_CLAUDE_MODEL api
+```
+
+If another one-off API container occupies port 8000, stop that session with Ctrl+C first. Submit the synthetic request above in Swagger and check for HTTP 200 with `metadata.provider=anthropic`. Claude uses structured output for questions and risks, a 1,000-token output cap, a 30-second SDK timeout and zero automatic retries. Responses remain drafts for human review. The Claude adapter's live request and provider-specific failure paths await verification.
+
+Eligible Claude Max, Ultra, and Team plans can claim API credits through a linked Console organization. Check the Console credit balance before making a request. See [Anthropic API credits](https://platform.claude.com/docs/en/about-claude/api-credits-for-subscribers).
+
+#### OpenAI configuration
+
+Build the image using Docker Compose. To try live analysis, supply `OPENAI_API_KEY` in your local shell and set `QA_OPENAI_MODEL` to a model your API project can access that supports Structured Outputs. Use synthetic requirements for the demonstration.
+
+```text
+docker compose run --rm --service-ports -e QA_ANALYSIS_PROVIDER=openai -e OPENAI_API_KEY -e QA_OPENAI_MODEL api
+```
+
+Stop the normal fake-mode container first if it is using port 8000. Submit the synthetic request above via the interactive API docs. Check that `metadata.provider` is `openai`. The live adapter requests clarification questions and risks, with a 1,000-token output limit, a 20-second SDK timeout, no automatic retries, and response storage disabled via `store=false`. It leaves `test_cases` empty. Missing configuration returns 503, a provider timeout returns 504, and other provider failures or unusable output return 502.
 
 ### Setup and start
 
