@@ -16,7 +16,7 @@ class ClaudeAnalysisProvider:
             timeout=30.0,
             max_retries=0,
         ) as client:
-            response = client.messages.parse(
+            response = client.messages.create(
                 model=self.model,
                 max_tokens=1000,
                 system=(
@@ -26,11 +26,22 @@ class ClaudeAnalysisProvider:
                     "Do not invent business rules or generate tests. Use empty lists when appropriate."
                 ),
                 messages=[{"role": "user", "content": request.model_dump_json()}],
-                output_format=RequirementFindings,
+                output_config={
+                    "format": {
+                        "type": "json_schema",
+                        "schema": RequirementFindings.model_json_schema(),
+                    }
+                },
             )
-        if response.stop_reason != "end_turn" or response.parsed_output is None:
-            raise UnusableAnalysisError
-        findings = response.parsed_output
+        if response.stop_reason != "end_turn":
+            reason = (
+                response.stop_reason
+                if response.stop_reason in {"max_tokens", "refusal"}
+                else "unexpected_stop"
+            )
+            raise UnusableAnalysisError(reason)
+        text = "".join(block.text for block in response.content if block.type == "text")
+        findings = RequirementFindings.model_validate_json(text)
         return AnalysisDraft(
             questions=findings.questions,
             risks=findings.risks,

@@ -2,13 +2,13 @@
 
 AI-assisted requirements analysis and test design, with explicit human review before test execution.
 
-**Status:** M1 is incomplete. The analysis endpoint defaults to a deterministic fake provider. Opt-in Claude and OpenAI adapters are implemented and await a successful live demonstration.
+**Status:** The analysis endpoint supports default fake mode and opt-in Claude and OpenAI adapters. A Claude live demonstration returned a structured draft successfully. Provider failure-path verification remains in progress.
 
 ## Current foundation (first slice of M1)
 
 Implemented: an installable Python 3.12 `src` package, a FastAPI app (`qa_intelligence.main:app`) with `GET /health` (process liveness only; no provider, database, or credentials), a Dockerfile, a Compose file, and one contract test for `/health`.
 
-M1 is not complete until a real-provider demonstration succeeds. See the roadmap below for the synthetic demo and later milestones.
+A successful real-provider demonstration is part of M1. See verification status and the roadmap below for remaining work.
 
 ### Analysis endpoint (fake mode)
 
@@ -64,7 +64,9 @@ docker compose -p qi-m1-foundation stop api
 docker compose -p qi-m1-foundation run --build --rm --service-ports -e QA_ANALYSIS_PROVIDER=anthropic -e ANTHROPIC_API_KEY -e QA_CLAUDE_MODEL api
 ```
 
-If another one-off API container occupies port 8000, stop that session with Ctrl+C first. Submit the synthetic request above in Swagger and check for HTTP 200 with `metadata.provider=anthropic`. Claude uses structured output for questions and risks, a 1,000-token output cap, a 30-second SDK timeout and zero automatic retries. Responses remain drafts for human review. The Claude adapter's live request and provider-specific failure paths await verification.
+If another one-off API container occupies port 8000, stop that session with Ctrl+C first. Submit the synthetic request above in Swagger and check for HTTP 200 with `metadata.provider=anthropic`. Claude uses structured output for questions and risks, a 1,000-token output cap, a 30-second SDK timeout and zero automatic retries. Responses remain drafts for human review. Completion reasons are checked before JSON validation. Cutoffs and refusals are rejected with HTTP 502 and a sanitized diagnostic reason.
+
+A live Claude request for a clarified synthetic energy requirement returned HTTP 200 with `provider=anthropic`, `model=claude-sonnet-5-5` and 1,742 total tokens. This verifies the live integration for one example. The draft still contained redundant and out-of-scope questions. An earlier request produced a validation error whose exact cause was not established. New mocked completion/failure regression tests are awaiting human review before isolated execution.
 
 Eligible Claude Max, Ultra, and Team plans can claim API credits through a linked Console organization. Check the Console credit balance before making a request. See [Anthropic API credits](https://platform.claude.com/docs/en/about-claude/api-credits-for-subscribers).
 

@@ -76,4 +76,11 @@ def create_analysis(
             type(exc).__name__,
             status,
         )
+        if isinstance(exc, UnusableAnalysisError):
+            logger.warning("Analysis output rejected: reason=%s", exc.reason)
+        elif isinstance(exc, ValidationError):
+            logger.warning(
+                "Analysis output rejected: validation_types=%s",
+                sorted({error["type"] for error in exc.errors(include_input=False)}),
+            )
         raise HTTPException(502, "Analysis provider did not return a usable draft") from None

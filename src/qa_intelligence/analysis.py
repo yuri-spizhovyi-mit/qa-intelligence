@@ -20,6 +20,10 @@ class RequirementFindings(BaseModel):
 class UnusableAnalysisError(Exception):
     """The provider did not return a complete, parsed draft."""
 
+    def __init__(self, reason: str = "invalid_output") -> None:
+        self.reason = reason
+        super().__init__(reason)
+
 
 class AnalysisProvider(Protocol):
     def analyze(self, request: AnalysisRequest) -> AnalysisDraft: ...
