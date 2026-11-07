@@ -62,7 +62,7 @@ A request is first validated and normalized: `device_id` is trimmed, `occurred_a
 | ID | Scenario → expected result | AC |
 |---|---|---|
 | S1 | Post a valid event → `201`, `Location` header, normalized body; GET of that location → `200` with the same body | 1, 6 |
-| S2 | Missing field, malformed UUID, or timestamp without an offset → `422`; a GET afterwards → `404` | 2 |
+| S2 | Missing field, malformed UUID, or timestamp without an offset → `422`; GET of a valid unused UUID afterwards → `404`; GET with a malformed UUID → `422` | 2, 6 |
 | S3 | `energy_wh` boundaries: 0 and 25000 accepted; −1, 25001, `12.5`, `"212"`, `true` → `422` | 2 |
 | S4 | `device_id` of `"   "` → `422`; `"  meter-01 "` is stored as `"meter-01"` | 2, 3 |
 | S5 | `occurred_at` sent as `+01:00` → returned as the matching UTC instant with `Z` | 3 |

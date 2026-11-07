@@ -4,7 +4,7 @@ Read and follow the shared repository instructions:
 
 @AGENTS.md
 
-Read README.md and docs/architecture.md before proposing implementation changes. The project is currently at the design stage; do not claim planned features are implemented.
+Read README.md and docs/architecture.md before proposing implementation changes. Check the current implementation and verification status before describing a feature as complete.
 
 ## Collaboration
 
