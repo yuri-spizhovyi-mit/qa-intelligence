@@ -82,7 +82,7 @@ Stop the normal fake-mode container first if it is using port 8000. Submit the s
 
 ### Setup and start
 
-The package targets Python 3.12 and its dependencies are declared in `pyproject.toml` (not locked yet). Docker is the supported execution path for this slice.
+The supported Docker target is Python 3.12 on Linux amd64. Dependencies are declared in `pyproject.toml` and pinned with hashes in the runtime, development and build lock files. The Dockerfile pins its Python base image by digest. See [locked builds](docs/builds.md) for the refresh workflow and verification scope.
 
 Docker Compose (binds to `127.0.0.1` only):
 
@@ -103,8 +103,9 @@ docker compose down
 - Verified on 2026-11-01: the image builds and starts; `/health` returns HTTP 200 with exactly `{"status":"ok"}`; `/docs` and `/openapi.json` return HTTP 200.
 - Inspected container settings: UID/GID 10001, read-only root filesystem, dropped capabilities, no-new-privileges, no host bind mounts, and bounded CPU, memory, and process count. The API port is bound to localhost.
 - The reviewed health contract test passed in a separate Docker container with networking disabled and no host mounts: **1 passed**. No tests were executed on the host. Modified or additional generated tests require renewed human review before isolated execution.
-- The test run emitted an upstream Starlette/httpx deprecation warning. Dependency compatibility and locking remain follow-up work; there is no CI pipeline yet.
-- Dependencies are not locked, so the image build is not claimed to be reproducible.
+- A clean Docker build installed the locked runtime and package-build dependencies with hash checking. The local package installation uses the locked build backend with network access and dependency resolution disabled.
+- All 13 previously reviewed platform scenarios passed together against the locked environment in a verified network-disabled Docker container. `pip check` reported no broken requirements. This run emitted no warnings.
+- Lock verification covers Python 3.12 on Linux amd64. CI is planned in M6.
 
 ## MVP
 
