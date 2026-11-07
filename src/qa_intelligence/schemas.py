@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
@@ -22,6 +22,7 @@ class AnalysisRequest(BaseModel):
     requirement_id: Annotated[str, _trimmed(100)]
     text: Annotated[str, _trimmed(10000)]
     acceptance_criteria: Annotated[list[AcceptanceCriterion], Field(max_length=20)]
+    generate_test_cases: Annotated[bool, Field(strict=True)] = False
 
     @model_validator(mode="after")
     def _reject_duplicate_criterion_ids(self) -> "AnalysisRequest":
@@ -38,12 +39,40 @@ class AnalysisMetadata(BaseModel):
     token_usage: int | None = None
 
 
+class DraftTestCase(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    id: str
+    title: str
+    category: Literal["positive", "negative", "boundary"]
+    preconditions: list[str]
+    steps: list[str]
+    expected_result: str
+    source_criterion_ids: list[str]
+
+    @model_validator(mode="after")
+    def validate_content(self) -> "DraftTestCase":
+        if not self.steps or not self.source_criterion_ids:
+            raise ValueError("Test cases require steps and source criterion IDs")
+        if len(self.steps) > 20 or len(self.preconditions) > 20:
+            raise ValueError("Too many test instructions")
+        values = [
+            self.id, self.title, self.expected_result,
+            *self.preconditions, *self.steps, *self.source_criterion_ids,
+        ]
+        if any(not value.strip() or len(value) > 2000 for value in values):
+            raise ValueError("Test case text must be nonempty and at most 2000 characters")
+        if len(set(self.source_criterion_ids)) != len(self.source_criterion_ids):
+            raise ValueError("Source criterion IDs must be unique")
+        return self
+
+
 class AnalysisDraft(BaseModel):
     """Provider output, before the service attaches the requirement identifier."""
 
     questions: list[str]
     risks: list[str]
-    test_cases: list[str]
+    test_cases: list[DraftTestCase]
     metadata: AnalysisMetadata
 
 
@@ -52,5 +81,5 @@ class AnalysisResponse(BaseModel):
     status: str
     questions: list[str]
     risks: list[str]
-    test_cases: list[str]
+    test_cases: list[DraftTestCase]
     metadata: AnalysisMetadata

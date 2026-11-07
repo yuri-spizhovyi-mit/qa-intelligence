@@ -2,7 +2,7 @@
 
 AI-assisted requirements analysis and test design, with explicit human review before test execution.
 
-**Status:** The analysis endpoint supports default fake mode and opt-in Claude and OpenAI adapters. A Claude live demonstration returned a structured draft successfully. The four reviewed Claude output regression scenarios passed in isolated Docker.
+**Status:** M2 test-case drafts are available through an explicit request option. A live Claude demonstration returned ten cases linked to supplied acceptance criteria. All 20 reviewed platform scenarios passed in isolated Docker. Persistence and saved review decisions are the next M2 increment.
 
 ## Current foundation (first slice of M1)
 
@@ -12,7 +12,7 @@ A successful real-provider demonstration is part of M1. See verification status 
 
 ### Analysis endpoint (fake mode)
 
-`POST /api/v1/analyses` validates the request and returns a draft produced by a **deterministic fake provider** (`provider=fake`). It performs no AI or semantic analysis, makes no external calls, uses no secrets, persists nothing, and generates no test cases (`test_cases` is always empty; test-case generation is M2). Output must not be read as real analysis.
+`POST /api/v1/analyses` validates the request and returns a draft. The default **deterministic fake provider** (`provider=fake`) returns a fixed fixture with an empty `test_cases` list. Live Claude and OpenAI adapters support optional test-case drafts described below.
 
 Request (synthetic example):
 
@@ -64,7 +64,7 @@ docker compose -p qi-m1-foundation stop api
 docker compose -p qi-m1-foundation run --build --rm --service-ports -e QA_ANALYSIS_PROVIDER=anthropic -e ANTHROPIC_API_KEY -e QA_CLAUDE_MODEL api
 ```
 
-If another one-off API container occupies port 8000, stop that session with Ctrl+C first. Submit the synthetic request above in Swagger and check for HTTP 200 with `metadata.provider=anthropic`. Claude uses structured output for questions and risks, a 1,000-token output cap, a 30-second SDK timeout and zero automatic retries. Responses remain drafts for human review. Completion reasons are checked before JSON validation. Cutoffs and refusals are rejected with HTTP 502 and a sanitized diagnostic reason.
+If another one-off API container occupies port 8000, stop that session with Ctrl+C first. Submit the synthetic request above in Swagger and check for HTTP 200 with `metadata.provider=anthropic`. Claude uses structured output, a 30-second SDK timeout and zero automatic retries. The output cap is 1,000 tokens for findings and 3,000 tokens when case generation is requested. Responses remain drafts for human review. Completion reasons are checked before JSON validation. Cutoffs and refusals are rejected with HTTP 502 and a sanitized diagnostic reason.
 
 A live Claude request for a clarified synthetic energy requirement returned HTTP 200 with `provider=anthropic`, `model=claude-sonnet-5-5` and 1,742 total tokens. This verifies the live integration for one example. The draft still contained redundant and out-of-scope questions. An earlier request produced a validation error whose exact cause was not established. After exact-file human review, all four mocked completion/failure regression scenarios passed in a non-root, network-disabled, read-only Docker container with no host mounts or credentials and bounded resources. They cover token cutoff, refusal, malformed completed JSON and valid completed output.
 
@@ -78,7 +78,17 @@ Build the image using Docker Compose. To try live analysis, supply `OPENAI_API_K
 docker compose run --rm --service-ports -e QA_ANALYSIS_PROVIDER=openai -e OPENAI_API_KEY -e QA_OPENAI_MODEL api
 ```
 
-Stop the normal fake-mode container first if it is using port 8000. Submit the synthetic request above via the interactive API docs. Check that `metadata.provider` is `openai`. The live adapter requests clarification questions and risks, with a 1,000-token output limit, a 20-second SDK timeout, no automatic retries, and response storage disabled via `store=false`. It leaves `test_cases` empty. Missing configuration returns 503, a provider timeout returns 504, and other provider failures or unusable output return 502.
+Stop the normal fake-mode container first if it is using port 8000. Submit the synthetic request above via the interactive API docs. Check that `metadata.provider` is `openai`. The adapter uses a 20-second SDK timeout, zero automatic retries, and response storage disabled via `store=false`. Its output cap is 1,000 tokens for findings or 3,000 for requested cases. Live OpenAI verification remains pending. Missing configuration returns 503, a provider timeout returns 504, and other provider failures or unusable output return 502.
+
+### Draft test cases
+
+Add `"generate_test_cases": true` to an analysis request to ask a live provider for up to 12 prose test cases. This strict boolean defaults to false, preserving findings-only requests.
+
+Each case contains `id`, `title`, `category` (positive, negative or boundary), `preconditions`, `steps`, `expected_result`, and `source_criterion_ids`. Cases require nonempty steps and criterion references, unique case IDs and references to supplied criteria. Invalid structures or references return HTTP 502. Unrequested cases are also rejected.
+
+A valid source ID establishes structural traceability. A reviewer must still decide whether the criterion supports the case's steps and expected result. Missing rules remain clarification questions.
+
+A live Claude demonstration using four clarified synthetic energy criteria returned ten draft cases across all three categories with references to all four criteria. For example, the case submitting `energy_wh=-1` expects HTTP 422 and cites AC-2. This single result is demonstration evidence. Saved analyses, review decisions and broader quality evaluation follow in later increments.
 
 ### Setup and start
 
@@ -104,7 +114,7 @@ docker compose down
 - Inspected container settings: UID/GID 10001, read-only root filesystem, dropped capabilities, no-new-privileges, no host bind mounts, and bounded CPU, memory, and process count. The API port is bound to localhost.
 - The reviewed health contract test passed in a separate Docker container with networking disabled and no host mounts: **1 passed**. No tests were executed on the host. Modified or additional generated tests require renewed human review before isolated execution.
 - A clean Docker build installed the locked runtime and package-build dependencies with hash checking. The local package installation uses the locked build backend with network access and dependency resolution disabled.
-- All 13 previously reviewed platform scenarios passed together against the locked environment in a verified network-disabled Docker container. `pip check` reported no broken requirements. This run emitted no warnings.
+- All 20 reviewed platform scenarios passed together against the locked environment in a verified network-disabled Docker container. This includes seven M2 structural and traceability scenarios. `pip check` previously reported no broken requirements for these locked dependencies.
 - Lock verification covers Python 3.12 on Linux amd64. CI is planned in M6.
 
 ## MVP
