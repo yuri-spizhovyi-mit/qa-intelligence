@@ -2,7 +2,7 @@
 
 AI-assisted requirements analysis and test design, with explicit human review before test execution.
 
-**Status:** The analysis endpoint supports default fake mode and opt-in Claude and OpenAI adapters. A Claude live demonstration returned a structured draft successfully. Provider failure-path verification remains in progress.
+**Status:** The analysis endpoint supports default fake mode and opt-in Claude and OpenAI adapters. A Claude live demonstration returned a structured draft successfully. The four reviewed Claude output regression scenarios passed in isolated Docker.
 
 ## Current foundation (first slice of M1)
 
@@ -66,7 +66,7 @@ docker compose -p qi-m1-foundation run --build --rm --service-ports -e QA_ANALYS
 
 If another one-off API container occupies port 8000, stop that session with Ctrl+C first. Submit the synthetic request above in Swagger and check for HTTP 200 with `metadata.provider=anthropic`. Claude uses structured output for questions and risks, a 1,000-token output cap, a 30-second SDK timeout and zero automatic retries. Responses remain drafts for human review. Completion reasons are checked before JSON validation. Cutoffs and refusals are rejected with HTTP 502 and a sanitized diagnostic reason.
 
-A live Claude request for a clarified synthetic energy requirement returned HTTP 200 with `provider=anthropic`, `model=claude-sonnet-5-5` and 1,742 total tokens. This verifies the live integration for one example. The draft still contained redundant and out-of-scope questions. An earlier request produced a validation error whose exact cause was not established. New mocked completion/failure regression tests are awaiting human review before isolated execution.
+A live Claude request for a clarified synthetic energy requirement returned HTTP 200 with `provider=anthropic`, `model=claude-sonnet-5-5` and 1,742 total tokens. This verifies the live integration for one example. The draft still contained redundant and out-of-scope questions. An earlier request produced a validation error whose exact cause was not established. After exact-file human review, all four mocked completion/failure regression scenarios passed in a non-root, network-disabled, read-only Docker container with no host mounts or credentials and bounded resources. They cover token cutoff, refusal, malformed completed JSON and valid completed output.
 
 Eligible Claude Max, Ultra, and Team plans can claim API credits through a linked Console organization. Check the Console credit balance before making a request. See [Anthropic API credits](https://platform.claude.com/docs/en/about-claude/api-credits-for-subscribers).
 
