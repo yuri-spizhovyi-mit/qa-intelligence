@@ -6,7 +6,7 @@ AI-assisted requirements analysis and test design, with explicit human review be
 
 ## Current capabilities
 
-The FastAPI platform supports health, analysis, saved snapshot retrieval and digest-bound review decisions. It has deterministic fake mode and optional live providers, strict input/output validation, SQLite storage and a locked Docker build. The separate Demo Energy Hub supplies the owned target for the next automation increment.
+The FastAPI platform supports health, analysis, saved snapshot retrieval and digest-bound review decisions. It has deterministic fake mode and optional live providers, strict input/output validation, SQLite storage and a locked Docker build. The separate Demo Energy Hub supplies the owned target for the next automation increment. A constrained Playwright artifact generator and restricted runner preflight are in development; the approval-and-hash launcher has run one reviewed lower-boundary scenario successfully in restricted Docker. See [runner status](infra/runner/README.md).
 
 A successful real-provider demonstration is part of M1. See verification status and the roadmap below for remaining work.
 

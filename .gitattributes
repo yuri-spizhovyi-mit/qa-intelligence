@@ -1,0 +1,5 @@
+infra/runner/* text eol=lf
+src/qa_intelligence/artifacts.py text eol=lf
+# Policy hashes bind exact bytes, including upstream line endings.
+infra/runner/seccomp_profile.json -text whitespace=cr-at-eol
+infra/runner/seccomp_chromium.json -text whitespace=cr-at-eol
