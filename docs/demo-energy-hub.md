@@ -1,6 +1,6 @@
 # Demo Energy Hub — synthetic test fixture
 
-Status: specification only. Nothing described here is implemented.
+Status: the two-endpoint API and browser page are implemented. See [demo setup and verification](../demo/energy-hub/README.md).
 
 **Provenance:** an invented fixture built from general engineering knowledge. All names, fields, limits, and data are fictional and do not represent any real product, company, or system.
 
@@ -14,8 +14,10 @@ Status: specification only. Nothing described here is implemented.
 |---|---|
 | `event_id` | Required UUID. Compared as a parsed UUID; responses use lowercase canonical form. |
 | `device_id` | Required string. Surrounding whitespace is trimmed; empty or whitespace-only values are invalid. |
-| `occurred_at` | Required RFC 3339 timestamp with an explicit offset. Normalized to UTC (`Z`) in responses. |
+| `occurred_at` | Required RFC 3339 timestamp with an explicit offset, seconds 00–59, and at most six fractional digits. Normalized to UTC (`Z`) in responses. |
 | `energy_wh` | Required strict integer from 0 to 25,000 inclusive. Strings, booleans, and decimals are invalid. |
+
+Only the four documented fields are accepted. The timestamp precision policy follows the fixture's datetime representation.
 
 ## Endpoints
 

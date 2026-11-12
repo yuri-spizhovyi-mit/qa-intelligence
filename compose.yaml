@@ -17,6 +17,30 @@ services:
     pids_limit: 100
     volumes:
       - qa-data:/var/lib/qa-intelligence
+  demo:
+    profiles: ["demo"]
+    build:
+      context: .
+      dockerfile: demo/energy-hub/Dockerfile
+    ports:
+      - "127.0.0.1:8002:8000"
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 100
+    networks:
+      - demo
 
 volumes:
   qa-data:
+
+networks:
+  demo:
+    driver: bridge
