@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Demo Energy Hub</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, sans-serif; color: #183048; background: #f3f6f9; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    header { background: #142d44; color: white; padding: 30px max(24px, calc((100% - 1080px) / 2)); }
+    header p { max-width: 700px; color: #cad9e5; line-height: 1.6; }
+    h1 { margin: 0; font-size: 28px; }
+    h2 { margin-top: 0; font-size: 20px; }
+    main { max-width: 1128px; margin: 28px auto; padding: 0 24px; display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; }
+    section { background: white; padding: 24px; border: 1px solid #dbe3eb; border-radius: 12px; }
+    label { display: block; font-weight: 600; margin: 20px 0 8px; }
+    textarea, input { width: 100%; border: 1px solid #94a8ba; border-radius: 6px; padding: 12px; font: 14px ui-monospace, monospace; }
+    textarea { min-height: 260px; resize: vertical; }
+    input { min-height: 44px; }
+    button { margin: 16px 8px 0 0; padding: 11px 17px; border: 1px solid #146e68; border-radius: 6px; background: #146e68; color: white; font: inherit; cursor: pointer; }
+    button.secondary { background: white; color: #146e68; }
+    button:disabled { opacity: .6; cursor: wait; }
+    :focus-visible { outline: 3px solid #dc9600; outline-offset: 3px; }
+    p { line-height: 1.6; }
+    .muted { color: #53697b; font-size: 14px; }
+    #response-panel { grid-column: 1 / -1; }
+    #response-status { font-weight: 700; }
+    pre { padding: 18px; background: #eef3f7; border-radius: 6px; white-space: pre-wrap; overflow-wrap: anywhere; min-height: 90px; font-size: 14px; }
+    @media (max-width: 720px) { main { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Demo Energy Hub</h1>
+    <p>A synthetic energy-event API for QA scenarios. Events are kept in memory and cleared when the demo restarts.</p>
+  </header>
+  <main>
+    <section>
+      <h2>Submit an energy event</h2>
+      <p class="muted">Enter the four event fields as JSON. The API validates the original text you submit.</p>
+      <form id="submit-form">
+        <label for="event-json">Event JSON</label>
+        <textarea id="event-json" spellcheck="false" required></textarea>
+        <button type="submit">Submit event</button>
+        <button type="button" class="secondary" id="new-sample">New sample</button>
+      </form>
+    </section>
+    <section>
+      <h2>Retrieve an event</h2>
+      <p class="muted">Use the event ID from a successful submission.</p>
+      <form id="retrieve-form">
+        <label for="event-id">Event ID</label>
+        <input id="event-id" type="text" autocomplete="off" required>
+        <button type="submit">Retrieve event</button>
+      </form>
+      <p class="muted">A new event returns 201. An equivalent replay returns 200. Conflicting content returns 409. Invalid fields return 422.</p>
+    </section>
+    <section id="response-panel" aria-live="polite">
+      <h2>API response</h2>
+      <p id="response-status" role="status">Ready</p>
+      <p id="response-location" class="muted"></p>
+      <pre id="response-body">Submit or retrieve an event to see the response.</pre>
+    </section>
+  </main>
+  <script>
+    const eventJson = document.getElementById("event-json");
+    const eventId = document.getElementById("event-id");
+    const status = document.getElementById("response-status");
+    const locationText = document.getElementById("response-location");
+    const result = document.getElementById("response-body");
+
+    function newSample() {
+      eventJson.value = JSON.stringify({
+        event_id: crypto.randomUUID(),
+        device_id: "meter-demo-01",
+        occurred_at: new Date().toISOString(),
+        energy_wh: 212
+      }, null, 2);
+    }
+
+    async function sendRequest(path, options, button) {
+      button.disabled = true;
+      status.textContent = "Sending request…";
+      locationText.textContent = "";
+      try {
+        const response = await fetch(path, options);
+        const body = await response.json();
+        status.textContent = "HTTP " + response.status;
+        const location = response.headers.get("Location");
+        locationText.textContent = location ? "Location " + location : "";
+        result.textContent = JSON.stringify(body, null, 2);
+        if (response.ok && typeof body.event_id === "string") {
+          eventId.value = body.event_id;
+        }
+      } catch (error) {
+        status.textContent = "Connection error";
+        result.textContent = "The demo API could not complete this request. " + error.message;
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    document.getElementById("submit-form").addEventListener("submit", event => {
+      event.preventDefault();
+      sendRequest("/v1/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: eventJson.value
+      }, event.currentTarget.querySelector('button[type="submit"]'));
+    });
+    document.getElementById("retrieve-form").addEventListener("submit", event => {
+      event.preventDefault();
+      sendRequest("/v1/events/" + encodeURIComponent(eventId.value.trim()), {
+        method: "GET"
+      }, event.currentTarget.querySelector('button[type="submit"]'));
+    });
+    document.getElementById("new-sample").addEventListener("click", newSample);
+    newSample();
+  </script>
+</body>
+</html>

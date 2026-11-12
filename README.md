@@ -2,11 +2,11 @@
 
 AI-assisted requirements analysis and test design, with explicit human review before test execution.
 
-**Status:** M2 supports opt-in test-case drafts and SQLite-backed analysis snapshots and review history. A live Claude demonstration returned ten cases linked to supplied acceptance criteria. All 32 reviewed platform scenarios passed in isolated Docker, and saved data survived API container replacement.
+**Status:** M1/M2 provide live requirements analysis, traceable test-case drafts and durable review history. M3 now includes the runnable Demo Energy Hub API and browser page. All 32 reviewed platform scenarios and 31 separate demo scenarios passed in isolated Docker.
 
-## Current foundation (first slice of M1)
+## Current capabilities
 
-Implemented: an installable Python 3.12 `src` package, a FastAPI app (`qa_intelligence.main:app`) with `GET /health` (process liveness only; no provider, database, or credentials), a Dockerfile, a Compose file, and one contract test for `/health`.
+The FastAPI platform supports health, analysis, saved snapshot retrieval and digest-bound review decisions. It has deterministic fake mode and optional live providers, strict input/output validation, SQLite storage and a locked Docker build. The separate Demo Energy Hub supplies the owned target for the next automation increment.
 
 A successful real-provider demonstration is part of M1. See verification status and the roadmap below for remaining work.
 
@@ -166,7 +166,7 @@ Deliver a documented API contract, a FastAPI service, a labeled fake provider fo
 
 See [architecture](docs/architecture.md) and [milestones](docs/milestones.md).
 
-The synthetic [Demo Energy Hub specification](docs/demo-energy-hub.md) defines the small application under test planned for M3. It is a fixture, not a separate product, and is not implemented yet.
+The synthetic [Demo Energy Hub](demo/energy-hub/README.md) is the M3 application under test, with a [two-endpoint specification](docs/demo-energy-hub.md) and browser page at port 8002. Start it with `docker compose -p qi-m1-foundation --profile demo up -d --build demo`.
 
 ## Full roadmap
 
