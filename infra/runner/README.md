@@ -1,6 +1,6 @@
 # Restricted runner preparation
 
-Status: the local approval-and-hash launcher is implemented. The reviewed lower-boundary scenario passed inside restricted Docker after source, integrity and sandbox checks. This demonstrates one constrained scenario; general generation and runner regression coverage remain pending.
+Status: the local approval-and-hash launcher is implemented. The reviewed lower-boundary scenario passed inside restricted Docker after source, integrity and sandbox checks. This demonstrates one constrained scenario; general generation and post-Docker failure-path coverage remain pending.
 
 The platform's prose approval and executable-code review are separate decisions. `qa_intelligence.artifacts` prepares one fixed template: submit an otherwise valid new event with `energy_wh=0` and expect HTTP 201 through the owned demo page. It requires an approved source snapshot and retains its analysis ID, digest, case and criterion references. Eligibility checks do not establish semantic equivalence; a person must review the exact code. This is a single constrained template, not general natural-language code generation.
 
@@ -54,4 +54,14 @@ Every invocation creates a fresh demo, isolated network and runner. The host imp
 
 Temporary containers, network, image tags and build-context files are removed in a finally block. Docker's build cache can retain image layers containing the synthetic artifact; cleanup does not imply secure erasure from Docker storage. Setup and orchestration failures stop execution or produce a launcher-error report; a missing/failed report is never a passing scenario. Unexpected termination of the host process can interrupt cleanup, so inspect Docker resources before retrying after a crash.
 
-Validation performed: PowerShell syntax parsing, browser-only preflight through the shared launcher, and the exact human-reviewed Playwright scenario in restricted Docker. Dedicated automated negative-path launcher regression tests have not been executed. Existing platform/demo tests were not rerun because their application code was unchanged.
+Validation performed: PowerShell syntax parsing, browser-only preflight through the shared launcher, and the exact human-reviewed Playwright scenario in restricted Docker. Twenty approval/integrity/source gate regression scenarios passed in a separate, verified non-root, network-disabled, read-only Docker container without host mounts or credentials. HTTP and Docker calls were replaced with sentinels; no fixture Python code ran. Post-Docker resource rejection, timeout and cleanup failure-path regressions remain pending. Existing platform/demo tests were not rerun because their application code was unchanged.
+
+## Approval gate regressions
+
+`tests/Test-ApprovalGate.ps1` exercises the actual `Invoke-ReviewedScenario.ps1` / `Invoke-Runner.ps1` entry points. It uses synthetic records and exact file hashes. Nineteen invalid-input paths must reject before any Docker call; the valid control must reach the mocked Docker boundary. The suite verifies the expected error, HTTP/Docker invocation counts and absence of an output directory for every case. It does not start nested containers or execute the fixture Python string.
+
+Coverage includes pending/missing approval, blank reviewer, changed bundle bytes/code/receipt digest/reviewed file, absent reviewed file, unsupported scenario, revoked source approval, empty or changed review history, mismatched draft/review digests, missing/duplicated/changed source case, unavailable API and oversized receipt.
+
+The COPY-only `tests/Dockerfile` pins Microsoft PowerShell 7.5 on Ubuntu24.04 by digest. Build from the repository root using `docker build --network none -f infra/runner/tests/Dockerfile -t qi-gate-reviewed .`. Building does not run the suite. Before execution, obtain exact-file human review, compare the copied image test file with its approved SHA-256, and verify actual container configuration: user10001, networknone, read-only root, temporary storage only, no mounts/credentials/added capabilities, no-new-privileges, seccomp filtering, memory512MiB, CPU1, PIDs100 and a 60-second outer timeout. This suite needs no Docker socket, running API, browser or model key.
+
+Verification result:20/20 passed, exit0. This establishes pre-Docker approval/source/integrity rejection behavior. It does not establish post-start resource-control rejection, timeout cleanup or independent authenticity of generated-code observations.
