@@ -77,3 +77,13 @@ The same pinned test image includes both suites. Its default entry point remains
 The separate cleanup report records whether all cleanup commands succeeded, their errors and any earlier operation error. Pre-Docker gate rejections still occur before runtime directories or cleanup reports are created. Host crashes or a broken Docker daemon can leave resources behind; the launcher reports failure rather than claiming successful cleanup. Broader real-runtime fault injection and artifact-mode image-removal failures are not covered by this simulated preflight suite.
 
 A real browser-only preflight after the cleanup fix also returned ready with one verified isolated renderer and code_executed=false. Its cleanup report recorded succeeded=true, and no temporary preflight network remained. No generated artifact was rerun for this cleanup-only change.
+
+## Outcome classification regressions
+
+Nine exact-file-reviewed tests in `tests/test_runner_outcomes.py` passed in verified non-root, network-disabled, read-only Docker, with no host mounts or credentials and bounded resources. They call the trusted controller's main function while replacing browser/readiness/isolation checks and artifact loading. No real browser or generated artifact runs in this suite.
+
+The controller reports an explicit `ProductFailure` as `product_failure`, other artifact/locator exceptions as `test_failure`, and startup, environment, digest or screenshot failures as `infrastructure_error`. Failure paths return a nonzero exit code; pre-execution failures must not load the artifact. A screenshot failure overrides a prior passing observation. Preflight returns ready without reading artifact code.
+
+These categories describe where an observed failure occurred; they are not independent proof of a product defect. For example, a wrong expected HTTP status in a reviewed scenario can still produce a product-failure report. Human investigation and supporting evidence remain required.
+
+`infra/runner/tests/Dockerfile.outcomes` supplies a pinned Python base and hash-locked dependencies. Its build allowlist includes only the required locks, trusted controller/contract and reviewed test file; builds do not run tests. It runs one explicit pytest file, not automatic discovery of generated artifacts. Apply the same exact-file approval and verified isolation policy as the other suites. This classification suite does not independently verify browser isolation; that evidence comes from the separate real restricted preflight and reviewed scenario run.

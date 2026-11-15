@@ -2,11 +2,11 @@
 
 AI-assisted requirements analysis and test design, with explicit human review before test execution.
 
-**Status:** M1/M2 provide live requirements analysis, traceable test-case drafts and durable review history. M3 now includes the runnable Demo Energy Hub API and browser page. All 32 reviewed platform scenarios and 31 separate demo scenarios passed in isolated Docker.
+**Status:** M1/M2 provide live requirements analysis, traceable test-case drafts and durable review history. M3 includes the Demo Energy Hub, a constrained Playwright generator and a digest-gated isolated runner with reports/screenshots. Recorded isolated runs cover 32 platform scenarios, 31 demo scenarios, 41 launcher scenarios and nine controller outcome-classification scenarios; these are separate suites, not one combined run.
 
 ## Current capabilities
 
-The FastAPI platform supports health, analysis, saved snapshot retrieval and digest-bound review decisions. It has deterministic fake mode and optional live providers, strict input/output validation, SQLite storage and a locked Docker build. The separate Demo Energy Hub supplies the owned target for the next automation increment. A constrained Playwright artifact generator and restricted runner preflight are in development; the approval-and-hash launcher has run one reviewed lower-boundary scenario successfully in restricted Docker. See [runner status](infra/runner/README.md).
+The FastAPI platform supports health, analysis, saved snapshot retrieval and digest-bound review decisions. It has deterministic fake mode and optional live providers, strict input/output validation, SQLite storage and a locked Docker build. The separate Demo Energy Hub supplies the owned target for the next automation increment. The constrained generator and approval-and-hash launcher have run one reviewed lower-boundary scenario successfully in restricted Docker. See [runner status](infra/runner/README.md).
 
 A successful real-provider demonstration is part of M1. See verification status and the roadmap below for remaining work.
 

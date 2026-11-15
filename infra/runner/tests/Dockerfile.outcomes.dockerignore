@@ -1,0 +1,9 @@
+**
+!requirements-dev.txt
+!infra/
+!infra/runner/
+!infra/runner/requirements.txt
+!infra/runner/controller.py
+!infra/runner/runner_contract.py
+!tests/
+!tests/test_runner_outcomes.py
