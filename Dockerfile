@@ -48,5 +48,9 @@ COPY tests/test_postgres_storage.py tests/test_health.py tests/test_analysis.py 
 USER 10001:10001
 ENTRYPOINT ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "/app/tests/test_postgres_storage.py"]
 
+FROM postgres-tests AS postgres-import-tests
+COPY tests/test_sqlite_import.py ./tests/
+ENTRYPOINT ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "/app/tests/test_sqlite_import.py"]
+
 # Preserve SQLite-only default builds and normal Compose behavior.
 FROM application AS runtime
