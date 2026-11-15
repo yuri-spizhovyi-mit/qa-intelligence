@@ -1,0 +1,12 @@
+FROM python:3.12-slim@sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+WORKDIR /app
+COPY requirements-dev.txt ./requirements-dev.txt
+COPY infra/runner/requirements.txt ./requirements-runner.txt
+RUN pip install --require-hashes --only-binary=:all: -r requirements-dev.txt -r requirements-runner.txt
+COPY infra/runner/controller.py infra/runner/runner_contract.py ./infra/runner/
+COPY tests/test_runner_outcomes.py ./tests/
+USER 10001:10001
+ENTRYPOINT ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "/app/tests/test_runner_outcomes.py"]
