@@ -1,6 +1,6 @@
 # PostgreSQL storage increment
 
-Status: the optional adapter passed the twelve reviewed integration checks against a disposable PostgreSQL fixture;32 existing SQLite/API scenarios also passed separately. SQLite remains the default backend. No existing records have been imported or switched to PostgreSQL.
+Status: the optional adapter passed the twelve reviewed integration checks against a disposable PostgreSQL fixture;32 existing SQLite/API scenarios also passed separately. SQLite remains the default backend. No existing application records have been imported or switched to PostgreSQL.
 
 The optional `PostgresAnalysisStore` implements the existing save/get/review contract. The API selects it only with `QA_STORAGE_BACKEND=postgres` and a nonempty `QA_DATABASE_URL`. An unsupported backend, missing driver/configuration or unavailable database fails closed with a storage error; `/health` remains process liveness only. Connection diagnostics are not returned to the client.
 
@@ -39,3 +39,6 @@ The unchanged human-reviewed test file passed12/12 in7.31s against PostgreSQL16.
 Both fixture containers were inspected before test execution: non-root UIDs999/10001, read-only roots, only bounded temporary storage, no host bind mounts/volumes/ports/socket, no external credentials, dropped capabilities, no-new-privileges, seccomp filtering, bounded memory/CPU/PIDs, disabled IPv6 and a dedicated internal network with isolated gateway mode. Only those two containers shared the network; the test alias resolved statically to the fixture. Installed application/migration and exact reviewed test hashes matched the source. The test container had a60-second outer deadline. The fixture and network were removed afterward.
 
 A separate verified network-disabled container ran the unchanged previously reviewed32 platform scenarios:32passed in3.54s. It exercised the default SQLite path with ephemeral storage. No model calls, existing SQLite volume access or record import occurred. These separate runs establish adapter/contract behavior, not PostgreSQL data survival across container replacement or completion of M4 retrieval work.
+
+
+The next increment verifies [controlled SQLite import](sqlite-import.md) and PostgreSQL container replacement on synthetic data. It preserves IDs, timestamps, digests and review order, rejects differing targets and rolls back failed transfers. Actual application-data cutover remains pending.
