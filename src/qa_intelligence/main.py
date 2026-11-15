@@ -29,6 +29,18 @@ logger = logging.getLogger("uvicorn.error")
 
 
 def get_analysis_store() -> AnalysisStore:
+    backend = os.getenv("QA_STORAGE_BACKEND", "sqlite")
+    if backend == "postgres":
+        dsn = os.getenv("QA_DATABASE_URL", "").strip()
+        if not dsn:
+            raise StorageUnavailableError from None
+        try:
+            from qa_intelligence.postgres_store import PostgresAnalysisStore
+        except ImportError:
+            raise StorageUnavailableError from None
+        return PostgresAnalysisStore(dsn)
+    if backend != "sqlite":
+        raise StorageUnavailableError from None
     directory = Path(os.getenv("QA_DATA_DIR", "/tmp/qa-intelligence"))
     return SQLiteAnalysisStore(directory / "analyses.sqlite3")
 

@@ -43,3 +43,8 @@ Platform verification containers direct `QA_DATA_DIR` into their ephemeral tmpfs
 ## Verified behavior
 
 The 32 reviewed platform scenarios passed in verified network-disabled Docker, including 12 persistence scenarios. A separate fake-provider HTTP verification saved an analysis and synthetic change request, removed the API container, and successfully retrieved both after creating a replacement container with the same disposable named volume. Verification resources were removed afterward.
+
+
+## Optional PostgreSQL backend
+
+The first M4 increment adds an opt-in PostgreSQL adapter and explicit versioned schema command. Twelve PostgreSQL contract scenarios and a separate32-scenario SQLite/API compatibility run passed in isolated Docker. SQLite remains the default, and existing records have not been imported or switched. See [PostgreSQL storage](postgresql.md) for configuration, verification and remaining work.

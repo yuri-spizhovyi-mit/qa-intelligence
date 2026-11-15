@@ -14,7 +14,7 @@ RUN pip-compile --generate-hashes --strip-extras --allow-unsafe --output-file=re
     && pip-compile --generate-hashes --strip-extras --allow-unsafe --extra=dev --constraint=requirements.txt --output-file=requirements-dev.txt pyproject.toml \
     && pip-compile --generate-hashes --strip-extras --allow-unsafe --only-build-deps --build-deps-for=wheel --output-file=requirements-build.txt pyproject.toml
 
-FROM base AS runtime
+FROM base AS application
 COPY requirements.txt requirements-build.txt ./
 RUN pip install --require-hashes --only-binary=:all: -r requirements-build.txt -r requirements.txt
 
@@ -33,3 +33,20 @@ USER 10001:10001
 EXPOSE 8000
 
 CMD ["uvicorn", "qa_intelligence.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+FROM application AS postgres
+USER root
+COPY requirements-postgres.txt ./
+RUN pip install --require-hashes --only-binary=:all: -r requirements-postgres.txt
+USER 10001:10001
+
+FROM postgres AS postgres-tests
+USER root
+COPY requirements-dev.txt ./
+RUN pip install --require-hashes --only-binary=:all: -r requirements-dev.txt
+COPY tests/test_postgres_storage.py tests/test_health.py tests/test_analysis.py tests/test_claude_output.py tests/test_case_traceability.py tests/test_persistence.py ./tests/
+USER 10001:10001
+ENTRYPOINT ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "/app/tests/test_postgres_storage.py"]
+
+# Preserve SQLite-only default builds and normal Compose behavior.
+FROM application AS runtime
