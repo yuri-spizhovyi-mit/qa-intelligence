@@ -7,7 +7,7 @@ ENV HOME=/tmp \
     POWERSHELL_TELEMETRY_OPTOUT=1 \
     POWERSHELL_UPDATECHECK=Off
 WORKDIR /work
-COPY infra/runner/Invoke-Runner.ps1 infra/runner/Invoke-ReviewedScenario.ps1 infra/runner/seccomp_chromium.json ./infra/runner/
-COPY infra/runner/tests/Test-ApprovalGate.ps1 ./infra/runner/tests/
+COPY infra/runner/Invoke-Runner.ps1 infra/runner/Invoke-ReviewedScenario.ps1 infra/runner/Test-RunnerPreflight.ps1 infra/runner/seccomp_chromium.json ./infra/runner/
+COPY infra/runner/tests/Test-ApprovalGate.ps1 infra/runner/tests/Test-RunnerLifecycle.ps1 ./infra/runner/tests/
 USER 10001:10001
 ENTRYPOINT ["pwsh", "-NoLogo", "-NoProfile", "-NonInteractive", "-File", "/work/infra/runner/tests/Test-ApprovalGate.ps1"]
