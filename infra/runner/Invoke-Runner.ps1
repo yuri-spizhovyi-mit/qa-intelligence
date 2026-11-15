@@ -25,6 +25,15 @@ function Invoke-Docker {
     return $result
 }
 
+function Invoke-CleanupDocker([string[]] $DockerArguments, [Collections.Generic.List[string]] $Errors) {
+    try {
+        & docker.exe @DockerArguments | Out-Null
+        if ($LASTEXITCODE) { throw "Docker cleanup command failed: $($DockerArguments -join ' ')" }
+    } catch {
+        $Errors.Add($_.Exception.Message)
+    }
+}
+
 function Assert-Container($Container, $User, $Memory, $Cpu, $Pids, $Network) {
     $hostConfig = $Container.HostConfig
     $networks = @($Container.NetworkSettings.Networks.PSObject.Properties.Name)
@@ -107,13 +116,16 @@ if ($baseImage -notmatch '^sha256:[0-9a-f]{64}$' -or $demoImage -notmatch '^sha2
 }
 $runnerImage = $baseImage
 $artifactImage = $null
+$artifactImageCreated = $false
 $baseTag = $null
+$baseTagCreated = $false
 $stagePath = $null
 $networkName = 'qi-preflight-' + [guid]::NewGuid().ToString('N')
 $demo = $null
 $runner = $null
 $waitJob = $null
 $networkCreated = $false
+$operationError = $null
 New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 $reportPath = Join-Path (Resolve-Path -LiteralPath $OutputDirectory).Path 'preflight.json'
 if ($isRun) {
@@ -132,10 +144,12 @@ try {
         # A private temporary tag points at the captured ID; verify the resulting layers.
         $baseTag = 'qi-trusted-' + $runId
         Invoke-Docker image tag $baseImage $baseTag | Out-Null
+        $baseTagCreated = $true
         [IO.File]::WriteAllText((Join-Path $stagePath 'Dockerfile'), "FROM $baseTag`nCOPY --chown=1001:1001 scenario.py /artifact/scenario.py`n")
         $artifactImage = 'qi-reviewed-' + $runId
         # COPY only: no generated code is executed during this offline build.
         Invoke-Docker build --quiet --network none --pull=false --tag $artifactImage $stagePath | Out-Null
+        $artifactImageCreated = $true
         $runnerImage = Invoke-Docker image inspect --format '{{.Id}}' $artifactImage
         if ($runnerImage -notmatch '^sha256:[0-9a-f]{64}$') { throw 'Artifact image identity is invalid' }
         $baseLayers = @((Invoke-Docker image inspect $baseImage | ConvertFrom-Json)[0].RootFS.Layers)
@@ -242,6 +256,7 @@ try {
     }
     Write-Output "Runner preflight ready. No artifact executed. Report: $reportPath"
 } catch {
+    $operationError = $_.Exception.Message
     if ($isRun -and -not (Test-Path -LiteralPath $reportPath)) {
         [ordered]@{
             run_id = $runId; outcome = 'launcher_error'
@@ -251,18 +266,32 @@ try {
     }
     throw
 } finally {
+    $cleanupErrors = [Collections.Generic.List[string]]::new()
     if ($waitJob) {
-        Remove-Job $waitJob -Force -ErrorAction SilentlyContinue
+        try { Remove-Job $waitJob -Force -ErrorAction Stop }
+        catch { $cleanupErrors.Add($_.Exception.Message) }
     }
-    if ($runner) { & docker.exe rm -f $runner | Out-Null }
-    if ($demo) { & docker.exe rm -f $demo | Out-Null }
-    if ($networkCreated) { & docker.exe network rm $networkName | Out-Null }
-    if ($artifactImage -and (& docker.exe image ls --quiet $artifactImage)) { & docker.exe image rm $artifactImage | Out-Null }
-    if ($baseTag) { & docker.exe image rm $baseTag | Out-Null }
+    if ($runner) { Invoke-CleanupDocker @('rm', '-f', $runner) $cleanupErrors }
+    if ($demo) { Invoke-CleanupDocker @('rm', '-f', $demo) $cleanupErrors }
+    if ($networkCreated) { Invoke-CleanupDocker @('network', 'rm', $networkName) $cleanupErrors }
+    if ($artifactImageCreated) { Invoke-CleanupDocker @('image', 'rm', $artifactImage) $cleanupErrors }
+    if ($baseTagCreated) { Invoke-CleanupDocker @('image', 'rm', $baseTag) $cleanupErrors }
     if ($stagePath) {
         # Only these two explicitly created files; never recurse over caller paths.
-        Remove-Item -LiteralPath (Join-Path $stagePath 'scenario.py') -ErrorAction SilentlyContinue
-        Remove-Item -LiteralPath (Join-Path $stagePath 'Dockerfile') -ErrorAction SilentlyContinue
-        Remove-Item -LiteralPath $stagePath -ErrorAction SilentlyContinue
+        foreach ($path in @((Join-Path $stagePath 'scenario.py'), (Join-Path $stagePath 'Dockerfile'), $stagePath)) {
+            try {
+                if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -ErrorAction Stop }
+            } catch { $cleanupErrors.Add($_.Exception.Message) }
+        }
+    }
+    try {
+        [ordered]@{
+            succeeded = ($cleanupErrors.Count -eq 0)
+            errors = @($cleanupErrors.ToArray())
+            operation_error = $operationError
+        } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path (Split-Path -Parent $reportPath) 'cleanup.json') -ErrorAction Stop
+    } catch { $cleanupErrors.Add($_.Exception.Message) }
+    if ($cleanupErrors.Count) {
+        throw "Cleanup failed: $($cleanupErrors -join '; '). Earlier operation error: $operationError"
     }
 }
